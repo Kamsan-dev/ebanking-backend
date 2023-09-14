@@ -9,6 +9,7 @@ import jakarta.persistence.DiscriminatorColumn;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -26,7 +27,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "TYPE", length = 4)
-public class BankAccount {
+public abstract class BankAccount {
 	
 	@Id
 	private String id;
@@ -39,7 +40,7 @@ public class BankAccount {
 	@ManyToOne
 	private Customer customer;
 	
-	@OneToMany(mappedBy = "bankAccount")
+	@OneToMany(mappedBy = "bankAccount", fetch = FetchType.LAZY)
 	private List<AccountOperation> accountOperations;
 
 } 
