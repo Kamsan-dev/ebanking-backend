@@ -2,8 +2,12 @@ package com.ebanking.app.web;
 
 import java.util.List;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -31,5 +35,23 @@ public class CustomerController {
 	public CustomerDTO getCustomer(@PathVariable(name="id") 
 		Long customerId){
 		return bankAccountService.getCustomer(customerId);
+	}
+	
+	@PostMapping("/customers")
+	public CustomerDTO saveCustomer(@RequestBody CustomerDTO request) {
+		return bankAccountService.saveCustomer(request);
+	}
+	
+	@PutMapping("/customers/{id}")
+	public CustomerDTO updateCustomer(@PathVariable(name="id") 
+		Long customerId, @RequestBody CustomerDTO customerDTO){
+		customerDTO.setId(customerId);
+		return bankAccountService.updateCustomer(customerDTO);
+	}
+	
+	@DeleteMapping("/customers/{id}")
+	public void deleteCustomer(@PathVariable(name="id") 
+		Long customerId){
+		bankAccountService.deleteCustomer(customerId);
 	}
 }
