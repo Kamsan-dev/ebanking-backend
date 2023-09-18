@@ -12,9 +12,12 @@ import org.springframework.stereotype.Service;
 import com.ebanking.app.dtos.AccountHistoryDTO;
 import com.ebanking.app.dtos.AccountOperationDTO;
 import com.ebanking.app.dtos.BankAccountDTO;
+import com.ebanking.app.dtos.CreditOperationDTO;
 import com.ebanking.app.dtos.CurrentAccountDTO;
 import com.ebanking.app.dtos.CustomerDTO;
+import com.ebanking.app.dtos.DebitOperationDTO;
 import com.ebanking.app.dtos.SavingAccountDTO;
+import com.ebanking.app.dtos.TransferOperationDTO;
 import com.ebanking.app.entites.AccountOperation;
 import com.ebanking.app.entites.BankAccount;
 import com.ebanking.app.entites.CurrentAccount;
@@ -100,49 +103,80 @@ public class BankAccountServiceImpl implements BankAccountService {
 	}
 
 	@Override
-	public void debit(String accountId, double amount, String description) throws BankAccountNotFoundException, BalanceNotSufficientException {
+	public DebitOperationDTO debit(String accountId, DebitOperationDTO request) throws BankAccountNotFoundException, BalanceNotSufficientException {
 		BankAccount bankAccount = bankAccountRepository.findById(accountId)
 				.orElseThrow(() -> 
 				new BankAccountNotFoundException("Bank account does not exist"));
-		if (bankAccount.getBalance() < amount) {
+		if (bankAccount.getBalance() < request.getAmount()) {
 			throw new BalanceNotSufficientException("Balance not sufficent");
 		}
 		
 		AccountOperation accountOperation = new AccountOperation();
 		accountOperation.setType(OperationType.DEBIT);
-		accountOperation.setDescription(description);
+		accountOperation.setDescription(request.getDescription());
 		accountOperation.setBankAccount(bankAccount);
-		accountOperation.setAmount(amount);
+		accountOperation.setAmount(request.getAmount());
 		accountOperation.setOperationDate(new Date());
 		accountOperationRepository.save(accountOperation);
 		
-		bankAccount.setBalance(bankAccount.getBalance() - amount);
+		bankAccount.setBalance(bankAccount.getBalance() - request.getAmount());
 		bankAccountRepository.save(bankAccount);
+		return request;
 		
 	}
 
 	@Override
-	public void credit(String accountId, double amount, String description) throws BankAccountNotFoundException{
+	public CreditOperationDTO credit(String accountId, CreditOperationDTO request) throws BankAccountNotFoundException{
 		BankAccount bankAccount = bankAccountRepository.findById(accountId)
 				.orElseThrow(() -> 
 				new BankAccountNotFoundException("Bank account does not exist"));
 		AccountOperation accountOperation = new AccountOperation();
 		accountOperation.setType(OperationType.CREDIT);
-		accountOperation.setDescription(description);
+		accountOperation.setDescription(request.getDescription());
 		accountOperation.setBankAccount(bankAccount);
-		accountOperation.setAmount(amount);
+		accountOperation.setAmount(request.getAmount());
 		accountOperation.setOperationDate(new Date());
 		accountOperationRepository.save(accountOperation);
 		
-		bankAccount.setBalance(bankAccount.getBalance() + amount);
+		bankAccount.setBalance(bankAccount.getBalance() + request.getAmount());
 		bankAccountRepository.save(bankAccount);
+		return request;
 		
 	}
 
 	@Override
-	public void transfer(String accountIdSource, String accountIdDestination, double amount) throws BankAccountNotFoundException, BalanceNotSufficientException {
-		this.debit(accountIdSource, amount, "Transfert to " + accountIdDestination);
-		this.credit(accountIdDestination, amount, "Tranfert from " + accountIdSource);
+	public TransferOperationDTO transfer(String accountId, TransferOperationDTO request) throws BankAccountNotFoundException, BalanceNotSufficientException {
+		
+		String accountIdSource =  accountId;
+		String accountIdDestination =  request.getAccountIdDestination();
+		
+		BankAccount bankAccountSource = bankAccountRepository.findById(accountIdSource)
+				.orElseThrow(() -> 
+				new BankAccountNotFoundException("Bank account of creditor does not exist"));
+		BankAccount bankAccountDestination = bankAccountRepository.findById(accountIdDestination)
+				.orElseThrow(() -> 
+				new BankAccountNotFoundException("Bank account of receiver does not exist"));
+		
+		String descriptionFrom = "Transfert from " + accountIdSource 
+				+ String.format("\n %s", request.getDescription());
+		
+		String descriptionTo = "Transfert to " + accountIdDestination
+				+ String.format("\n %s", request.getDescription());
+		
+		
+		DebitOperationDTO d = new DebitOperationDTO();
+		d.setAmount(request.getAmount());
+		d.setDescription(descriptionTo);
+		d.setCoveredBy(bankAccountDestination.getCustomer().getName());
+		this.debit(accountIdSource, d);
+		
+		CreditOperationDTO c = new CreditOperationDTO();
+		c.setAmount(request.getAmount());
+		c.setDescription(descriptionFrom);
+		c.setCoveredBy(bankAccountSource.getCustomer().getName());
+		this.credit(accountIdDestination, c);
+		
+		return request;
 		
 	}
 
