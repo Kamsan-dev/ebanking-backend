@@ -205,6 +205,7 @@ public class BankAccountServiceImpl implements BankAccountService {
 		currentAccount.setId(UUID.randomUUID().toString());
 		currentAccount.setCustomer(customer);
 		currentAccount.setBalance(initialBalance);
+		
 		currentAccount.setStatus(AccountStatus.CREATED);
 		currentAccount.setCreatedAt(new Date());
 		currentAccount.setInterestRate(interestRate);
@@ -257,6 +258,27 @@ public class BankAccountServiceImpl implements BankAccountService {
 		accountHistoryDTO.setTotalPages(accountOperations.getTotalPages());
 		
 		return accountHistoryDTO;
-		
+	}
+	
+	@Override
+	public List<CustomerDTO> searchCustomers(String keyword){
+		return customerRepository.searchCustomers('%'+keyword+'%')
+				.stream()
+				.map(cust -> DTOMapper.fromCustomer(cust))
+				.collect(Collectors.toList());
+	}
+	
+	@Override
+	public List<BankAccountDTO> getBankAccountsByCustomerId(String customerId){
+		return bankAccountRepository.findAccountsByCustomerId(customerId)
+				.stream()
+				.map(account -> {
+					if (account instanceof SavingAccount savingAccount) {
+						return DTOMapper.fromSavingAccount(savingAccount);
+					} else if (account instanceof CurrentAccount currentAccount) {
+						return DTOMapper.fromCurrentAccount(currentAccount);
+					}
+					return null;
+				}).collect(Collectors.toList());
 	}
 }

@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ebanking.app.dtos.CustomerDTO;
@@ -32,6 +33,11 @@ public class CustomerController {
 	public List<CustomerDTO> customers(){
 		log.info("fetch customer");
 		return bankAccountService.listCustomers();
+	}
+	
+	@GetMapping("/customers/search")
+	public List<CustomerDTO> searchCustomers(@RequestParam(name="keyword", defaultValue="") String keyword){
+		return bankAccountService.searchCustomers(keyword);
 	}
 	
 	@GetMapping("/customers/{id}")

@@ -37,10 +37,16 @@ public class BankAccountController {
 		return bankAccountService.bankAccountList();
 	}
 	
-	@GetMapping("/accounts/{accountId}")
-	public BankAccountDTO getCustomer(@PathVariable(name="accountId") 
+	@GetMapping("/accounts/search/{accountId}")
+	public BankAccountDTO getAccountById(@PathVariable(name="accountId") 
 		String accountId){
 		return bankAccountService.getBankAccount(accountId);
+	}
+	
+	@GetMapping("/accounts/{customerId}")
+	public List<BankAccountDTO> getAccountsByCustomerId(@PathVariable(name="customerId") 
+		String customerId){
+		return bankAccountService.getBankAccountsByCustomerId(customerId);
 	}
 	
 	@GetMapping("/accounts/{accountId}/operations")

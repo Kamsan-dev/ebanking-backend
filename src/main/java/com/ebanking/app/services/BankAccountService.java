@@ -36,4 +36,6 @@ public interface BankAccountService {
 	CreditOperationDTO credit(String accountId, CreditOperationDTO request) throws BankAccountNotFoundException;
 	TransferOperationDTO transfer(String accountId, TransferOperationDTO request)
 			throws BankAccountNotFoundException, BalanceNotSufficientException;
+	List<CustomerDTO> searchCustomers(String keyword);
+	List<BankAccountDTO> getBankAccountsByCustomerId(String customerId);
 }

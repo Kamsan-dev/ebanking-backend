@@ -11,6 +11,6 @@ public class CustomerDTO {
 	private Long id;
 	@NotNull @NotBlank(message = "Name should not be null")
 	private String name;
-	@Email (message = "Invalid email adress")
+	@Email @NotBlank(message = "Invalid email adress")
 	private String email;
 }
