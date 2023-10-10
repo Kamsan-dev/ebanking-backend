@@ -9,7 +9,10 @@ import java.util.stream.Stream;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
@@ -35,28 +38,14 @@ import com.ebanking.app.repositories.CustomerRepository;
 import com.ebanking.app.services.BankAccountService;
 
 @SpringBootApplication
+//@EnableJpaRepositories("com.ebanking.app.*")
+//@ComponentScan(basePackages = {"com.ebanking.app.*"})
+//@EntityScan("com.ebanking.app.*")
 public class EbankingBackendApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(EbankingBackendApplication.class, args);
 	}
-	
-	@Bean
-	public CorsFilter corsFilter() {
-		CorsConfiguration corsConfiguration = new CorsConfiguration();
-		corsConfiguration.setAllowCredentials(true);
-		corsConfiguration.setAllowedOrigins(Arrays.asList("http://localhost:4200"));
-		corsConfiguration.setAllowedHeaders(Arrays.asList("Origin", "Access-Control-Allow-Origin", "Content-Type",
-				"Accept", "Authorization", "Origin, Accept", "X-Requested-With",
-				"Access-Control-Request-Method", "Access-Control-Request-Headers"));
-		corsConfiguration.setExposedHeaders(Arrays.asList("Origin", "Content-Type", "Accept", "Authorization",
-				"Access-Control-Allow-Origin", "Access-Control-Allow-Origin", "Access-Control-Allow-Credentials"));
-		corsConfiguration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-		UrlBasedCorsConfigurationSource urlBasedCorsConfigurationSource = new UrlBasedCorsConfigurationSource();
-		urlBasedCorsConfigurationSource.registerCorsConfiguration("/**", corsConfiguration);
-		return new CorsFilter(urlBasedCorsConfigurationSource);
-	}
-	
 	
 	@Bean
 	CommandLineRunner clr(BankAccountService bankAccountService) {
@@ -71,11 +60,12 @@ public class EbankingBackendApplication {
 			
 			bankAccountService.listCustomers().forEach(customer -> {
 				
+			/* initial balance, overdraft || interested rate */
 			try {
 				bankAccountService
-					.saveCurrentBankAccount(Math.random() * 9000, 9000.0, customer.getId());
+					.saveCurrentBankAccount(Math.random() * 9000, (int)(Math.random() * ((15000 - 9000) + 1)) + 9000, customer.getId());
 				bankAccountService
-					.saveSavingBankAccount(Math.random() * 15000, 5.5, customer.getId());
+					.saveSavingBankAccount(Math.random() * 15000, Math.random() * ((4.5 - 0.5) + 1) + 0.5, customer.getId());
 				
 			} catch (CustomerNotFoundException | BankAccountNotFoundException e) {
 				e.printStackTrace();
@@ -118,53 +108,53 @@ public class EbankingBackendApplication {
 		};
 	}
 	//@Bean
-	CommandLineRunner start(CustomerRepository CR, 
-			AccountOperationRepository AOR,
-			BankAccountRepository BAR) {
-		return args -> {
-			
-			Stream.of("Hassan", "Yassine", "Aicha").forEach(name -> {
-				Customer customer = new Customer();
-				customer.setName(name);
-				customer.setEmail(name+"@gmail.com");
-				CR.save(customer);
-			});
-			
-			CR.findAll().forEach(cust -> {
-				CurrentAccount currentAccount = new CurrentAccount();
-				currentAccount.setId(UUID.randomUUID().toString());
-				currentAccount.setBalance(Math.random()*9000);
-				currentAccount.setCreatedAt(new Date());
-				currentAccount.setStatus(AccountStatus.CREATED);
-				currentAccount.setCustomer(cust);
-				currentAccount.setOverdraft(9000);
-				currentAccount.setCurrency("€");
-				BAR.save(currentAccount);
-				
-				SavingAccount savingAccount = new SavingAccount();
-				savingAccount.setId(UUID.randomUUID().toString());
-				savingAccount.setBalance(Math.random()*9000);
-				savingAccount.setCreatedAt(new Date());
-				savingAccount.setStatus(AccountStatus.CREATED);
-				savingAccount.setCustomer(cust);
-				savingAccount.setInterestRate(5.5);
-				savingAccount.setCurrency("€");
-				BAR.save(savingAccount);
-			});
-			
-			BAR.findAll().forEach(bankAccount -> {
-				for (int i = 0; i < 10; i++) {
-					AccountOperation ao = new AccountOperation();
-					ao.setBankAccount(bankAccount);
-					ao.setOperationDate(new Date());
-					ao.setType(Math.random()> 0.5 ? 
-							OperationType.DEBIT : OperationType.CREDIT);
-					ao.setAmount(Math.random() * 12000);
-					AOR.save(ao);
-				}
-			});
-			
-		};
-	}
+//	CommandLineRunner start(CustomerRepository CR, 
+//			AccountOperationRepository AOR,
+//			BankAccountRepository BAR) {
+//		return args -> {
+//			
+//			Stream.of("Hassan", "Yassine", "Aicha").forEach(name -> {
+//				Customer customer = new Customer();
+//				customer.setName(name);
+//				customer.setEmail(name+"@gmail.com");
+//				CR.save(customer);
+//			});
+//			
+//			CR.findAll().forEach(cust -> {
+//				CurrentAccount currentAccount = new CurrentAccount();
+//				currentAccount.setId(UUID.randomUUID().toString());
+//				currentAccount.setBalance(Math.random()*9000);
+//				currentAccount.setCreatedAt(new Date());
+//				currentAccount.setStatus(AccountStatus.CREATED);
+//				currentAccount.setCustomer(cust);
+//				currentAccount.setOverdraft(9000);
+//				currentAccount.setCurrency("€");
+//				BAR.save(currentAccount);
+//				
+//				SavingAccount savingAccount = new SavingAccount();
+//				savingAccount.setId(UUID.randomUUID().toString());
+//				savingAccount.setBalance(Math.random()*9000);
+//				savingAccount.setCreatedAt(new Date());
+//				savingAccount.setStatus(AccountStatus.CREATED);
+//				savingAccount.setCustomer(cust);
+//				savingAccount.setInterestRate(5.5);
+//				savingAccount.setCurrency("€");
+//				BAR.save(savingAccount);
+//			});
+//			
+//			BAR.findAll().forEach(bankAccount -> {
+//				for (int i = 0; i < 10; i++) {
+//					AccountOperation ao = new AccountOperation();
+//					ao.setBankAccount(bankAccount);
+//					ao.setOperationDate(new Date());
+//					ao.setType(Math.random()> 0.5 ? 
+//							OperationType.DEBIT : OperationType.CREDIT);
+//					ao.setAmount(Math.random() * 12000);
+//					AOR.save(ao);
+//				}
+//			});
+//			
+//		};
+//	}
 
 }

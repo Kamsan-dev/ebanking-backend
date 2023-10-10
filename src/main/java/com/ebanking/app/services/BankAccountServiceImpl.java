@@ -107,10 +107,17 @@ public class BankAccountServiceImpl implements BankAccountService {
 		BankAccount bankAccount = bankAccountRepository.findById(accountId)
 				.orElseThrow(() -> 
 				new BankAccountNotFoundException("Bank account does not exist"));
-		if (bankAccount.getBalance() < request.getAmount()) {
-			throw new BalanceNotSufficientException("Balance not sufficent");
-		}
 		
+		if (bankAccount instanceof CurrentAccount currentAccount) {
+			if (currentAccount.getBalance() + currentAccount.getOverdraft() < request.getAmount()) {
+				throw new BalanceNotSufficientException("Balance not sufficent");
+			}
+		} else {
+			if (bankAccount.getBalance() < request.getAmount()) {
+				throw new BalanceNotSufficientException("Balance not sufficent");
+			}
+			
+		}
 		AccountOperation accountOperation = new AccountOperation();
 		accountOperation.setType(OperationType.DEBIT);
 		accountOperation.setDescription(request.getDescription());
@@ -147,6 +154,7 @@ public class BankAccountServiceImpl implements BankAccountService {
 	@Override
 	public TransferOperationDTO transfer(String accountId, TransferOperationDTO request) throws BankAccountNotFoundException, BalanceNotSufficientException {
 		
+		log.info("Transfer tentative");
 		String accountIdSource =  accountId;
 		String accountIdDestination =  request.getAccountIdDestination();
 		
@@ -242,7 +250,7 @@ public class BankAccountServiceImpl implements BankAccountService {
 				new BankAccountNotFoundException("Bank account does not exist"));
 		
 		Page<AccountOperation> accountOperations = accountOperationRepository
-					.findByBankAccountId(accountId, PageRequest.of(page, size));
+					.findByBankAccountIdOrderByOperationDateDesc(accountId, PageRequest.of(page, size));
 		
 		AccountHistoryDTO accountHistoryDTO = new AccountHistoryDTO();
 		List<AccountOperationDTO> accountOperationDTOs= accountOperations.getContent()

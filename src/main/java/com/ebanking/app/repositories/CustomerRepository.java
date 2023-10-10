@@ -10,7 +10,7 @@ import com.ebanking.app.entites.Customer;
 
 public interface CustomerRepository extends JpaRepository<Customer, Long>{
 	
-	@Query("SELECT c FROM Customer c WHERE c.name like :kw")
+	@Query("SELECT c FROM Customer c WHERE c.name ilike :kw")
 	List<Customer> searchCustomers(@Param(value="kw")String keyword);
 
 }
