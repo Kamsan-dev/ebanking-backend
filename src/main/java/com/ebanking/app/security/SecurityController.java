@@ -20,6 +20,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ebanking.app.entites.AppUser;
+import com.ebanking.app.services.AccountServiceImpl;
+
 @RestController
 @RequestMapping("api/v1/auth")
 public class SecurityController {
@@ -28,6 +31,9 @@ public class SecurityController {
 	private AuthenticationManager authenticationManager;
 	@Autowired
 	private JwtEncoder jwtEncoder;
+	
+	@Autowired
+	private AccountServiceImpl accountServiceImpl;
 
 	/* Get profil of authentified user */
 	@GetMapping("/profile")
@@ -37,15 +43,19 @@ public class SecurityController {
 
 	@PostMapping("/login")
 	public Map<String, String> login(String username, String password) {
+		System.out.println("toast");
 		Authentication authentication = authenticationManager
 				.authenticate(new UsernamePasswordAuthenticationToken(username, password));
+		
+		AppUser userAuthenticated = accountServiceImpl.loadUserByUsername(username);
 
 		/* jwt token creation */
 		String scope = authentication.getAuthorities().stream().map(a -> a.getAuthority())
 				.collect(Collectors.joining(" "));
 		Instant instant = Instant.now();
 		JwtClaimsSet jwtClaimsSet = JwtClaimsSet.builder().issuedAt(instant)
-				.expiresAt(instant.plus(10, ChronoUnit.MINUTES)).subject(username).claim("scope", scope).build();
+				.expiresAt(instant.plus(10, ChronoUnit.MINUTES)).subject(username)
+				.claim("customerid", userAuthenticated.getCustomer_id().getId()).claim("scope", scope).build();
 
 		JwtEncoderParameters jwtEncoderParameters = JwtEncoderParameters
 				.from(JwsHeader.with(MacAlgorithm.HS512).build(), jwtClaimsSet);

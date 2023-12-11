@@ -1,16 +1,21 @@
 package com.ebanking.app.security;
 
 import java.util.Arrays;
+import java.util.stream.Stream;
 
 import javax.crypto.spec.SecretKeySpec;
+import javax.sql.DataSource;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -26,12 +31,20 @@ import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
+import com.ebanking.app.dtos.CustomerDTO;
+import com.ebanking.app.entites.Customer;
+import com.ebanking.app.repositories.CustomerRepository;
+import com.ebanking.app.services.AccountService;
+import com.ebanking.app.services.BankAccountService;
+import com.ebanking.app.services.UserDetailServiceImpl;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
+
 
 @Configuration
 @EnableWebSecurity
@@ -40,8 +53,32 @@ public class SecurityConfig {
 	
 	@Value("${jwtsecret}")
 	private String secretKey;
+	
+	private UserDetailServiceImpl userDetailsServiceImpl;
+	
+	
+	@Autowired
+	public SecurityConfig(UserDetailServiceImpl userDetailsServiceImpl) {
+		this.userDetailsServiceImpl = userDetailsServiceImpl;
+	}
 
-	@Bean
+	//@Bean
+	public JdbcUserDetailsManager jdbcUserDetailsManager(DataSource dataSource ) {
+		return new JdbcUserDetailsManager(dataSource);
+	}
+	
+	//@Bean
+	CommandLineRunner users(JdbcUserDetailsManager jdbcUserDetailsManager) {
+		PasswordEncoder passwordEncoder = passwordEncoder();
+		return args -> {
+			jdbcUserDetailsManager.createUser(
+					User.withUsername("user1").password(passwordEncoder.encode("12345")).authorities("USER").build());
+			jdbcUserDetailsManager.createUser(
+					User.withUsername("admin").password(passwordEncoder.encode("admin")).authorities("USER", "ADMIN").build());
+		};
+	}
+
+	//@Bean
 	public InMemoryUserDetailsManager inMemoryUserDetailsManager() {
 		PasswordEncoder passwordEncoder = passwordEncoder();
 		return new InMemoryUserDetailsManager(
@@ -49,6 +86,34 @@ public class SecurityConfig {
 				User.withUsername("admin").password(passwordEncoder.encode("admin")).authorities("USER", "ADMIN")
 						.build());
 
+	}
+	
+	@Bean
+	CommandLineRunner userDetails(AccountService accountService, BankAccountService bankAccountService) {
+		PasswordEncoder passwordEncoder = passwordEncoder();
+		return args -> {
+			
+			Stream.of("Hassan", "Yassine", "Aicha", "ADMIN").forEach(name -> {
+				CustomerDTO customerDTO = new CustomerDTO();
+				customerDTO.setName(name);
+				customerDTO.setEmail(name+"@gmail.com");
+				bankAccountService.saveCustomer(customerDTO);
+			});
+
+			accountService.addNewRole("USER");
+			accountService.addNewRole("ADMIN");
+			accountService.addNewUser("user1", passwordEncoder.encode("12345"), "user1@gmail.com", passwordEncoder.encode("12345"), 1);
+			accountService.addNewUser("user2", passwordEncoder.encode("12345"), "user1@gmail.com", passwordEncoder.encode("12345"), 2);
+			accountService.addNewUser("user3", passwordEncoder.encode("12345"), "user1@gmail.com", passwordEncoder.encode("12345"), 3);
+			accountService.addNewUser("admin", passwordEncoder.encode("admin"), "admin@gmail.com", passwordEncoder.encode("admin"), 4);
+			
+			accountService.addRoleToUser("user1", "USER");
+			accountService.addRoleToUser("user2", "USER");
+			accountService.addRoleToUser("user3", "USER");
+			
+			accountService.addRoleToUser("admin", "ADMIN"); 
+			accountService.addRoleToUser("admin", "USER");
+		};
 	}
 
 	@Bean
@@ -66,6 +131,7 @@ public class SecurityConfig {
 				.authorizeHttpRequests(ar -> ar.anyRequest().authenticated())
 				//.httpBasic(Customizer.withDefaults())
 				.oauth2ResourceServer(oa -> oa.jwt(Customizer.withDefaults()))
+				//.userDetailsService(userDetailsServiceImpl)
 				.build();
 	}
 	
@@ -94,10 +160,10 @@ public class SecurityConfig {
 	}
 	
 	@Bean
-	public AuthenticationManager authenticationManager(UserDetailsService userDetailsService) {
+	public AuthenticationManager authenticationManager() {
 		DaoAuthenticationProvider daoAuthenticationProvider = new DaoAuthenticationProvider();
 		daoAuthenticationProvider.setPasswordEncoder(passwordEncoder());
-		daoAuthenticationProvider.setUserDetailsService(userDetailsService);
+		daoAuthenticationProvider.setUserDetailsService(userDetailsServiceImpl);
 		return new ProviderManager(daoAuthenticationProvider);
 	}
 	
